@@ -34,6 +34,15 @@
         <h3>Версія</h3>
         <p>1.0.0 — навчальний проєкт</p>
       </div>
+
+      <f7-button
+        fill
+        large
+        href="/help/"
+        class="page-action"
+      >
+        Правила використання
+      </f7-button>
     </div>
 
     <AppTabbar active="about" />
