@@ -28,6 +28,20 @@ const progressTasks = computed(() => {
   ).length;
 });
 
+const plannedTasks = computed(() => {
+  return taskState.tasks.filter(
+    task => task.status === 'todo'
+  ).length;
+});
+
+const completionPercent = computed(() => {
+  if (totalTasks.value === 0) return 0;
+
+  return Math.round(
+    (completedTasks.value / totalTasks.value) * 100
+  );
+});
+
 const activeTasks = computed(() => {
   const order = {
     high: 0,
@@ -94,6 +108,34 @@ function handlePriorityChange(payload) {
           </span>
           <strong>{{ completedTasks }}</strong>
         </div>
+
+        <div class="tf3-stat">
+          <span class="tf3-stat-label">
+            Заплановано
+          </span>
+          <strong>{{ plannedTasks }}</strong>
+        </div>
+      </section>
+
+      <section class="tf3-completion">
+        <div class="tf3-completion-heading">
+          <span>Прогрес виконання</span>
+          <strong>{{ completionPercent }}%</strong>
+        </div>
+
+        <div
+          class="tf3-progress-track"
+          role="progressbar"
+          aria-label="Відсоток виконаних завдань"
+          :aria-valuenow="completionPercent"
+          aria-valuemin="0"
+          aria-valuemax="100"
+        >
+          <div
+            class="tf3-progress-fill"
+            :style="{ width: completionPercent + '%' }"
+          ></div>
+        </div>
       </section>
 
       <section class="tf3-section">
@@ -102,6 +144,7 @@ function handlePriorityChange(payload) {
             <div class="tf3-eyebrow">
               PRIORITY TASKS
             </div>
+
             <h2>Актуальні завдання</h2>
           </div>
 
