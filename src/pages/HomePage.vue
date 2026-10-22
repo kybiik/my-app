@@ -1,8 +1,9 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 import AppTabbar from '../components/AppTabbar.vue';
 import TaskCard from '../components/TaskCard.vue';
+import TaskCounter from '../components/TaskCounter.vue';
 
 import {
   taskState,
@@ -11,6 +12,8 @@ import {
 } from '../store/tasks.js';
 
 import '../css/task-components.css';
+
+const selectedTaskId = ref(null);
 
 const totalTasks = computed(() => {
   return taskState.tasks.length;
@@ -43,7 +46,7 @@ const completionPercent = computed(() => {
 });
 
 const activeTasks = computed(() => {
-  const order = {
+  const priorityOrder = {
     high: 0,
     medium: 1,
     low: 2,
@@ -51,8 +54,19 @@ const activeTasks = computed(() => {
 
   return taskState.tasks
     .filter(task => task.status !== 'done')
-    .sort((a, b) => order[a.priority] - order[b.priority])
+    .sort((a, b) => {
+      return (
+        priorityOrder[a.priority] - priorityOrder[b.priority] ||
+        a.id - b.id
+      );
+    })
     .slice(0, 3);
+});
+
+const selectedTask = computed(() => {
+  return taskState.tasks.find(
+    task => task.id === selectedTaskId.value
+  ) || null;
 });
 
 function handleStatusChange(payload) {
@@ -61,6 +75,14 @@ function handleStatusChange(payload) {
 
 function handlePriorityChange(payload) {
   setTaskPriority(payload);
+}
+
+function handleTaskSelect(id) {
+  selectedTaskId.value = id;
+}
+
+function clearSelection() {
+  selectedTaskId.value = null;
 }
 </script>
 
@@ -92,28 +114,32 @@ function handlePriorityChange(payload) {
           <span class="tf3-stat-label">
             Усього завдань
           </span>
-          <strong>{{ totalTasks }}</strong>
+
+          <TaskCounter :count="totalTasks" />
         </div>
 
         <div class="tf3-stat">
           <span class="tf3-stat-label">
             У роботі
           </span>
-          <strong>{{ progressTasks }}</strong>
+
+          <TaskCounter :count="progressTasks" />
         </div>
 
         <div class="tf3-stat">
           <span class="tf3-stat-label">
             Виконано
           </span>
-          <strong>{{ completedTasks }}</strong>
+
+          <TaskCounter :count="completedTasks" />
         </div>
 
         <div class="tf3-stat">
           <span class="tf3-stat-label">
             Заплановано
           </span>
-          <strong>{{ plannedTasks }}</strong>
+
+          <TaskCounter :count="plannedTasks" />
         </div>
       </section>
 
@@ -136,6 +162,27 @@ function handlePriorityChange(payload) {
             :style="{ width: completionPercent + '%' }"
           ></div>
         </div>
+      </section>
+
+      <section
+        v-if="selectedTask"
+        class="tf3-selection"
+        aria-live="polite"
+      >
+        <div class="tf3-eyebrow">
+          Вибране завдання
+        </div>
+
+        <h2>{{ selectedTask.title }}</h2>
+        <p>{{ selectedTask.description }}</p>
+
+        <button
+          type="button"
+          class="tf3-action"
+          @click="clearSelection"
+        >
+          Скасувати вибір
+        </button>
       </section>
 
       <section class="tf3-section">
@@ -163,6 +210,7 @@ function handlePriorityChange(payload) {
             :task="task"
             @status-change="handleStatusChange"
             @priority-change="handlePriorityChange"
+            @task-select="handleTaskSelect"
           />
         </div>
 

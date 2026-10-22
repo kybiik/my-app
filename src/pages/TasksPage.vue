@@ -22,6 +22,18 @@ const statusOptions = [
   { value: 'done', label: 'Виконано' },
 ];
 
+const selectedTaskId = ref(null);
+
+const selectedTask = computed(() => {
+  return taskState.tasks.find(
+    task => task.id === selectedTaskId.value
+  ) || null;
+});
+
+function handleTaskSelect(id) {
+  selectedTaskId.value = id;
+}
+
 const priorityOptions = [
   { value: 'all', label: 'Усі' },
   { value: 'low', label: 'Низький' },
@@ -30,17 +42,30 @@ const priorityOptions = [
 ];
 
 const filteredTasks = computed(() => {
-  return taskState.tasks.filter(task => {
-    const matchesStatus =
-      selectedStatus.value === 'all' ||
-      task.status === selectedStatus.value;
+  const priorityOrder = {
+    high: 0,
+    medium: 1,
+    low: 2,
+  };
 
-    const matchesPriority =
-      selectedPriority.value === 'all' ||
-      task.priority === selectedPriority.value;
+  return taskState.tasks
+    .filter(task => {
+      const matchesStatus =
+        selectedStatus.value === 'all' ||
+        task.status === selectedStatus.value;
 
-    return matchesStatus && matchesPriority;
-  });
+      const matchesPriority =
+        selectedPriority.value === 'all' ||
+        task.priority === selectedPriority.value;
+
+      return matchesStatus && matchesPriority;
+    })
+    .sort((a, b) => {
+      return (
+        priorityOrder[a.priority] - priorityOrder[b.priority] ||
+        a.id - b.id
+      );
+    });
 });
 
 function handleStatusChange(payload) {
@@ -139,6 +164,7 @@ function handlePriorityChange(payload) {
             :task="task"
             @status-change="handleStatusChange"
             @priority-change="handlePriorityChange"
+            @task-select="handleTaskSelect"
           />
         </div>
 
@@ -146,6 +172,24 @@ function handlePriorityChange(payload) {
           За обраними фільтрами завдань не знайдено.
         </div>
       </section>
+      <section
+  v-if="selectedTask"
+  class="tf3-selection"
+  aria-live="polite"
+>
+  <div class="tf3-eyebrow">Вибране завдання</div>
+
+  <h2>{{ selectedTask.title }}</h2>
+  <p>{{ selectedTask.description }}</p>
+
+  <button
+    type="button"
+    class="tf3-action"
+    @click="selectedTaskId = null"
+  >
+    Скасувати вибір
+  </button>
+</section>
     </div>
 
     <AppTabbar active="tasks" />

@@ -47,6 +47,38 @@ export const tasks = [
     priority: 'low',
     dueDate: '2026-10-30',
   },
+  {
+    id: 7,
+    title: 'Перевірити роботу фільтрів',
+    description: 'Протестувати одночасний вибір статусу та пріоритету.',
+    status: 'todo',
+    priority: 'high',
+    dueDate: '2026-11-01',
+  },
+  {
+    id: 8,
+    title: 'Перевірити мобільну версію',
+    description: 'Переглянути картки на екранах 320 та 375 px.',
+    status: 'progress',
+    priority: 'medium',
+    dueDate: '2026-11-02',
+  },
+  {
+    id: 9,
+    title: 'Опублікувати попередню версію',
+    description: 'Завантажити застосунок на Cloudflare Workers.',
+    status: 'done',
+    priority: 'low',
+    dueDate: '2026-11-03',
+  },
+  {
+    id: 10,
+    title: 'Оформити звіт КП 2/5',
+    description: 'Додати пояснення компонентів і скриншоти перевірок.',
+    status: 'todo',
+    priority: 'low',
+    dueDate: '2026-11-04',
+  },
 ];
 
 export default tasks;

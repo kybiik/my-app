@@ -403,3 +403,23 @@
   background: #35b4e5;
   transition: width 0.3s ease;
 }
+
+.tf3-selection {
+  margin-top: 20px;
+  padding: 20px;
+  border: 1px solid #35b4e5;
+  border-radius: 14px;
+  background: #142237;
+  color: #edf4ff;
+}
+
+.tf3-selection h2 {
+  margin: 10px 0;
+  color: #fff;
+  font-size: 20px;
+}
+
+.tf3-selection p {
+  color: #aabbd0;
+  line-height: 1.6;
+}
