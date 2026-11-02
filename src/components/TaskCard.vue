@@ -14,6 +14,7 @@ const props = defineProps({
 const emit = defineEmits([
   'status-change',
   'priority-change',
+  'task-select',
 ]);
 
 const statusSequence = ['todo', 'progress', 'done'];
@@ -54,6 +55,10 @@ function changeStatus() {
       (index + 1) % statusSequence.length
     ],
   });
+}
+
+function selectTask() {
+  emit('task-select', props.task.id);
 }
 
 function changePriority() {
@@ -109,6 +114,14 @@ function changePriority() {
           @click="changePriority"
         >
           Змінити пріоритет
+        </button>
+
+        <button
+          type="button"
+          class="tf3-action"
+          @click="selectTask"
+        >
+          Вибрати завдання
         </button>
       </div>
     </f7-card-content>
