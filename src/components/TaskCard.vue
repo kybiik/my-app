@@ -9,16 +9,31 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  editable: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits([
   'status-change',
   'priority-change',
   'task-select',
+  'edit',
 ]);
 
 const statusSequence = ['todo', 'progress', 'done'];
 const prioritySequence = ['low', 'medium', 'high'];
+
+const categoryLabels = {
+  study: 'Навчання',
+  work: 'Робота',
+  personal: 'Особисте',
+};
+
+const categoryText = computed(() => {
+  return categoryLabels[props.task.category] ?? 'Навчання';
+});
 
 const statusActionText = computed(() => {
   const labels = {
@@ -31,7 +46,9 @@ const statusActionText = computed(() => {
 });
 
 const formattedDate = computed(() => {
-  if (!props.task.dueDate) return 'Без терміну';
+  if (!props.task.dueDate) {
+    return 'Без терміну';
+  }
 
   const date = new Date(`${props.task.dueDate}T12:00:00`);
 
@@ -57,10 +74,6 @@ function changeStatus() {
   });
 }
 
-function selectTask() {
-  emit('task-select', props.task.id);
-}
-
 function changePriority() {
   const index = prioritySequence.indexOf(props.task.priority);
 
@@ -70,6 +83,14 @@ function changePriority() {
       (index + 1) % prioritySequence.length
     ],
   });
+}
+
+function selectTask() {
+  emit('task-select', props.task.id);
+}
+
+function editTask() {
+  emit('edit', props.task.id);
 }
 </script>
 
@@ -90,8 +111,21 @@ function changePriority() {
 
       <div class="tf3-card-meta">
         <div class="tf3-meta-item">
-          <span class="tf3-meta-label">Пріоритет:</span>
+          <span class="tf3-meta-label">
+            Пріоритет:
+          </span>
+
           <PriorityBadge :priority="task.priority" />
+        </div>
+
+        <div class="tf3-meta-item">
+          <span class="tf3-meta-label">
+            Категорія:
+          </span>
+
+          <span class="tf3-badge tf3-category">
+            {{ categoryText }}
+          </span>
         </div>
 
         <div class="tf3-meta-date">
@@ -123,7 +157,23 @@ function changePriority() {
         >
           Вибрати завдання
         </button>
+
+        <button
+          v-if="editable"
+          type="button"
+          class="tf3-action"
+          @click="editTask"
+        >
+          Редагувати
+        </button>
       </div>
     </f7-card-content>
   </f7-card>
 </template>
+
+<style scoped>
+.tf3-category {
+  color: #c4b5fd;
+  background: #382957;
+}
+</style>
