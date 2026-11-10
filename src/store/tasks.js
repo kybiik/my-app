@@ -207,3 +207,17 @@ export function setTaskPriority({ id, priority }) {
     task.priority = priority;
   }
 }
+
+export function deleteTask(id) {
+  const index = taskState.tasks.findIndex(
+    task => task.id === Number(id)
+  );
+
+  if (index === -1) {
+    return false;
+  }
+
+  taskState.tasks.splice(index, 1);
+
+  return true;
+}

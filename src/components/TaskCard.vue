@@ -20,6 +20,7 @@ const emit = defineEmits([
   'priority-change',
   'task-select',
   'edit',
+  'delete',
 ]);
 
 const statusSequence = ['todo', 'progress', 'done'];
@@ -92,6 +93,10 @@ function selectTask() {
 function editTask() {
   emit('edit', props.task.id);
 }
+
+function requestDelete() {
+  emit('delete', props.task.id);
+}
 </script>
 
 <template>
@@ -106,7 +111,7 @@ function editTask() {
       </div>
 
       <p class="tf3-card-description">
-        {{ task.description }}
+        {{ task.description || 'Без опису' }}
       </p>
 
       <div class="tf3-card-meta">
@@ -166,6 +171,15 @@ function editTask() {
         >
           Редагувати
         </button>
+
+        <button
+          v-if="editable"
+          type="button"
+          class="tf3-action tf3-action--danger"
+          @click="requestDelete"
+        >
+          Видалити
+        </button>
       </div>
     </f7-card-content>
   </f7-card>
@@ -175,5 +189,20 @@ function editTask() {
 .tf3-category {
   color: #c4b5fd;
   background: #382957;
+}
+
+.tf3-action--danger {
+  color: #ffd1d8;
+  background: #4a2532;
+  border: 1px solid #b85d6a;
+}
+
+.tf3-action--danger:hover {
+  background: #613040;
+}
+
+.tf3-action--danger:focus-visible {
+  outline: 2px solid #ffb6be;
+  outline-offset: 3px;
 }
 </style>
