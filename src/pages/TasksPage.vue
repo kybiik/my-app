@@ -9,6 +9,18 @@ import TaskListControls from '../components/TaskListControls.vue';
 import { storeToRefs } from 'pinia';
 import { useTasksStore } from '../store/tasks.js';
 import { useProjectsStore } from '../store/projects.js';
+import { persistenceState, retrySave } from '../services/persistence.js';
+import '../css/persistence.css';
+
+const saveMessage = computed(() => {
+  if (persistenceState.status === 'loading') return 'Завантаження локальних даних…';
+  if (persistenceState.status === 'saving') return 'Збереження змін у IndexedDB…';
+  if (persistenceState.status === 'saved') return 'Усі зміни збережено в цьому браузері.';
+  return persistenceState.error;
+});
+const lastSavedText = computed(() => persistenceState.lastSavedAt
+  ? new Intl.DateTimeFormat('uk-UA', { dateStyle: 'short', timeStyle: 'medium' }).format(new Date(persistenceState.lastSavedAt))
+  : '');
 
 const taskStore = useTasksStore();
 const projectStore = useProjectsStore();
@@ -234,6 +246,13 @@ function handleDelete(id) {
       >
         {{ feedback }}
       </p>
+
+      <section class="tf7-persistence" :class="`tf7-persistence--${persistenceState.status}`" role="status" aria-live="polite" aria-label="Локальне збереження">
+        <strong>Локальне збереження</strong>
+        <span>{{ saveMessage }}</span>
+        <small v-if="lastSavedText">Останнє збереження: {{ lastSavedText }}</small>
+        <button v-if="persistenceState.canRetry" type="button" class="tf3-action" @click="retrySave">Повторити збереження</button>
+      </section>
 
       <section class="tf6-project-panel" aria-label="Мої проєкти">
         <h2>Мої проєкти</h2>

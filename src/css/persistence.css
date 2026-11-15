@@ -1,0 +1,19 @@
+.tf7-persistence {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin: 18px 0;
+  padding: 14px 16px;
+  border: 1px solid #385a7a;
+  border-radius: 12px;
+  background: #13243a;
+  color: #d7e4f5;
+}
+.tf7-persistence--saved { border-color: #2c8b70; background: #123c35; color: #b5f3dc; }
+.tf7-persistence--saving { border-color: #bca35a; background: #403823; color: #ffe8a7; }
+.tf7-persistence--error { border-color: #b85d6a; background: #4a2532; color: #ffd1d8; }
+.tf7-persistence small { width: 100%; color: inherit; }
+@media (max-width: 680px) {
+  .tf7-persistence { align-items: stretch; flex-direction: column; }
+}
