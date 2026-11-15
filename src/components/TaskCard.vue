@@ -9,6 +9,7 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  projectTitle: { type: String, default: 'Загальні' },
   editable: {
     type: Boolean,
     default: false,
@@ -131,6 +132,10 @@ function requestDelete() {
           <span class="tf3-badge tf3-category">
             {{ categoryText }}
           </span>
+        </div>
+
+        <div class="tf3-meta-date">
+          Проєкт: {{ projectTitle }}
         </div>
 
         <div class="tf3-meta-date">

@@ -1,131 +1,21 @@
-import { reactive } from 'vue';
+import { defineStore } from 'pinia';
 import initialTasks from '../data/tasks.js';
+import { useProjectsStore } from './projects.js';
+import { getTaskErrors } from './task-validation.js';
 
 const allowedStatuses = ['todo', 'progress', 'done'];
 const allowedPriorities = ['low', 'medium', 'high'];
-const allowedCategories = ['study', 'work', 'personal'];
 
-export const taskState = reactive({
-  tasks: initialTasks.map(task => ({
-    ...task,
-    category: task.category ?? 'study',
-  })),
-});
-
-function formatLocalDate(date) {
-  const year = String(date.getFullYear()).padStart(4, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-
-  return `${year}-${month}-${day}`;
-}
-
-function validDate(value) {
-  if (
-    typeof value !== 'string' ||
-    !/^\d{4}-\d{2}-\d{2}$/.test(value)
-  ) {
-    return false;
-  }
-
-  const date = new Date(`${value}T12:00:00`);
-
-  return (
-    !Number.isNaN(date.getTime()) &&
-    formatLocalDate(date) === value
-  );
-}
-
-function normalizeTitle(value) {
-  return value.trim().toLocaleLowerCase('uk-UA');
-}
-
-/*
- * Спільна перевірка для сховища та форми.
- * originalTask = null означає створення.
- * Об’єкт originalTask означає редагування.
- */
-export function getTaskErrors(data, originalTask = null) {
-  const errors = {};
-
-  if (!data || typeof data !== 'object') {
-    return {
-      title: 'Дані завдання не визначені.',
-    };
-  }
-
-  const title =
-    typeof data.title === 'string'
-      ? data.title.trim()
-      : '';
-
-  const description =
-    typeof data.description === 'string'
-      ? data.description.trim()
-      : '';
-
-  if (!title) {
-    errors.title = 'Вкажіть назву завдання.';
-  } else if (title.length < 3) {
-    errors.title = 'Назва має містити щонайменше 3 символи.';
-  } else if (title.length > 80) {
-    errors.title = 'Максимальна довжина — 80 символів.';
-  }
-
-  // Перевіряємо унікальність лише під час створення.
-  if (!errors.title && originalTask === null) {
-    const duplicateExists = taskState.tasks.some(task => {
-      return normalizeTitle(task.title) === normalizeTitle(title);
-    });
-
-    if (duplicateExists) {
-      errors.title = 'Завдання з такою назвою вже існує.';
-    }
-  }
-
-  if (description.length > 300) {
-    errors.description =
-      'Опис не повинен перевищувати 300 символів.';
-  }
-
-  if (!allowedStatuses.includes(data.status)) {
-    errors.status = 'Оберіть коректний статус.';
-  }
-
-  if (!allowedPriorities.includes(data.priority)) {
-    errors.priority = 'Оберіть коректний пріоритет.';
-  }
-
-  if (!allowedCategories.includes(data.category)) {
-    errors.category = 'Оберіть коректну категорію.';
-  }
-
-  if (!validDate(data.dueDate)) {
-    errors.dueDate = 'Укажіть коректну дату завершення.';
-  } else {
-    const today = formatLocalDate(new Date());
-
-    const keepsOriginalDate =
-      originalTask !== null &&
-      data.dueDate === originalTask.dueDate;
-
-    if (data.dueDate < today && !keepsOriginalDate) {
-      errors.dueDate =
-        'Дата завершення не може бути в минулому.';
-    }
-  }
-
-  return errors;
-}
-
-function normalizeTaskData(data, originalTask = null) {
-  const errors = getTaskErrors(data, originalTask);
+function normalizeTaskData(data, originalTask = null, existingTasks = []) {
+  const errors = getTaskErrors(data, originalTask, existingTasks);
 
   if (Object.keys(errors).length > 0) {
     return null;
   }
 
   return {
+    projectId: useProjectsStore().projects.some(project => project.id === data.projectId)
+      ? data.projectId : 'general',
     title: data.title.trim(),
     description:
       typeof data.description === 'string'
@@ -138,86 +28,212 @@ function normalizeTaskData(data, originalTask = null) {
   };
 }
 
-export function addTask(data) {
-  const normalized = normalizeTaskData(data);
+export const useTasksStore = defineStore('tasks', {
+  state: () => ({
+    tasks: initialTasks.map(task => ({ ...task, category: task.category ?? 'study', projectId: task.projectId ?? 'general' })),
+    searchText: '', selectedStatus: 'all', selectedPriority: 'all',
+    selectedProject: 'all', sortOrder: 'newest', onlyIncomplete: false,
+  }),
+  getters: {
+    totalTasks: state => state.tasks.length,
+    completedTasks: state => state.tasks.filter(task => task.status === 'done').length,
+    progressTasks: state => state.tasks.filter(task => task.status === 'progress').length,
+    plannedTasks: state => state.tasks.filter(task => task.status === 'todo').length,
+    completionPercent() { return this.totalTasks ? Math.round(this.completedTasks / this.totalTasks * 100) : 0; },
+    activeTasks: state => {
+      const rank = { high: 3, medium: 2, low: 1 };
+      return state.tasks.filter(task => task.status !== 'done')
+        .sort((a, b) => rank[b.priority] - rank[a.priority] || b.id - a.id).slice(0, 3);
+    },
+    visibleTasks: state => {
+      const query = state.searchText
+        .trim()
+        .toLocaleLowerCase('uk-UA');
 
-  if (!normalized) {
-    return null;
-  }
+      const priorityOrder = {
+        high: 0,
+        medium: 1,
+        low: 2,
+      };
 
-  const nextId = taskState.tasks.reduce(
-    (maxId, task) => Math.max(maxId, task.id),
-    0
-  ) + 1;
+      const statusOrder = {
+        progress: 0,
+        todo: 1,
+        done: 2,
+      };
 
-  const newTask = {
-    id: nextId,
-    ...normalized,
-  };
+      // filter() створює окремий масив.
+      const result = state.tasks.filter(task => {
+        const matchesStatus =
+          state.selectedStatus === 'all' ||
+          task.status === state.selectedStatus;
 
-  taskState.tasks.push(newTask);
+        const matchesPriority =
+          state.selectedPriority === 'all' ||
+          task.priority === state.selectedPriority;
 
-  return newTask;
-}
+        const searchableText =
+          `${task.title} ${task.description ?? ''}`
+            .toLocaleLowerCase('uk-UA');
 
-export function updateTask({ id, ...data }) {
-  const task = taskState.tasks.find(
-    item => item.id === id
-  );
+        const matchesSearch = searchableText.includes(query);
 
-  if (!task) {
-    return null;
-  }
+        const matchesIncomplete =
+          !state.onlyIncomplete ||
+          task.status !== 'done';
 
-  const normalized = normalizeTaskData(data, task);
+        return (
+          (state.selectedProject === 'all' || task.projectId === state.selectedProject) &&
+          matchesStatus &&
+          matchesPriority &&
+          matchesSearch &&
+          matchesIncomplete
+        );
+      });
 
-  if (!normalized) {
-    return null;
-  }
+      // Сортується лише результат фільтрації.
+      return result.sort((a, b) => {
+        if (state.sortOrder === 'title') {
+          return (
+            a.title.localeCompare(b.title, 'uk-UA') ||
+            b.id - a.id
+          );
+        }
 
-  Object.assign(task, normalized);
+        if (state.sortOrder === 'priority') {
+          return (
+            priorityOrder[a.priority] - priorityOrder[b.priority] ||
+            b.id - a.id
+          );
+        }
 
-  return task;
-}
+        if (state.sortOrder === 'status') {
+          return (
+            statusOrder[a.status] - statusOrder[b.status] ||
+            b.id - a.id
+          );
+        }
 
-export function setTaskStatus({ id, status }) {
-  if (!allowedStatuses.includes(status)) {
-    return;
-  }
+        if (
+          state.sortOrder === 'dueDate' ||
+          state.sortOrder === 'dueDateDesc'
+        ) {
+          // Порожні дати в обох режимах залишаються наприкінці.
+          if (!a.dueDate && !b.dueDate) {
+            return b.id - a.id;
+          }
 
-  const task = taskState.tasks.find(
-    item => item.id === id
-  );
+          if (!a.dueDate) {
+            return 1;
+          }
 
-  if (task) {
-    task.status = status;
-  }
-}
+          if (!b.dueDate) {
+            return -1;
+          }
 
-export function setTaskPriority({ id, priority }) {
-  if (!allowedPriorities.includes(priority)) {
-    return;
-  }
+          const dateComparison = a.dueDate.localeCompare(b.dueDate);
 
-  const task = taskState.tasks.find(
-    item => item.id === id
-  );
+          return (
+            (
+              state.sortOrder === 'dueDateDesc'
+                ? -dateComparison
+                : dateComparison
+            ) ||
+            b.id - a.id
+          );
+        }
 
-  if (task) {
-    task.priority = priority;
-  }
-}
+        return b.id - a.id;
+      });
+    },
+  },
+  actions: {
+    addTask(data) {
+      const normalized = normalizeTaskData(data, null, this.tasks);
 
-export function deleteTask(id) {
-  const index = taskState.tasks.findIndex(
-    task => task.id === Number(id)
-  );
+      if (!normalized) {
+        return null;
+      }
 
-  if (index === -1) {
-    return false;
-  }
+      const nextId = this.tasks.reduce(
+        (maxId, task) => Math.max(maxId, task.id),
+        0
+      ) + 1;
 
-  taskState.tasks.splice(index, 1);
+      const newTask = {
+        id: nextId,
+        ...normalized,
+      };
 
-  return true;
-}
+      this.tasks.push(newTask);
+
+      return newTask;
+    },
+
+    updateTask({ id, ...data }) {
+      const task = this.tasks.find(
+        item => item.id === id
+      );
+
+      if (!task) {
+        return null;
+      }
+
+      const normalized = normalizeTaskData(data, task, this.tasks);
+
+      if (!normalized) {
+        return null;
+      }
+
+      Object.assign(task, normalized);
+
+      return task;
+    },
+
+    setTaskStatus({ id, status }) {
+      if (!allowedStatuses.includes(status)) {
+        return;
+      }
+
+      const task = this.tasks.find(
+        item => item.id === id
+      );
+
+      if (task) {
+        task.status = status;
+      }
+    },
+
+    setTaskPriority({ id, priority }) {
+      if (!allowedPriorities.includes(priority)) {
+        return;
+      }
+
+      const task = this.tasks.find(
+        item => item.id === id
+      );
+
+      if (task) {
+        task.priority = priority;
+      }
+    },
+
+    deleteTask(id) {
+      const index = this.tasks.findIndex(
+        task => task.id === Number(id)
+      );
+
+      if (index === -1) {
+        return false;
+      }
+
+      this.tasks.splice(index, 1);
+
+      return true;
+    },
+    resetFilters() {
+      this.searchText = ''; this.selectedStatus = 'all'; this.selectedPriority = 'all';
+      this.selectedProject = 'all'; this.sortOrder = 'newest'; this.onlyIncomplete = false;
+    },
+  },
+});

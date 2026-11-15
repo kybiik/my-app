@@ -1,5 +1,30 @@
-# Vue 3 + Vite
+# TaskFlow
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+PWA-менеджер завдань на Vue 3, Framework7, Vite та Pinia. Практикум 2.9 розвиває попередню версію застосунку.
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+## Запуск і перевірка
+
+```sh
+npm install
+npm run dev
+npm test
+npm run build
+npm run preview
+```
+
+`npm test` виконує дев'ять тестів сховищ: початкові дані, валідація, CRUD, нормалізація projectId, комбіновані фільтри, шість режимів сортування без зміни вихідного масиву, реактивність статистики та скидання стану.
+
+## Спільний стан
+
+- `src/store/tasks.js`: завдання, пошук, статус, пріоритет, проєкт, сортування, швидкий фільтр невиконаних, статистика та CRUD.
+- `src/store/projects.js`: каталог проєктів, унікальні назви довжиною 3–40 символів, назва за ID та статистика кожного проєкту.
+- `src/store/task-validation.js`: спільна перевірка даних форми та дій сховища; не зберігає власного стану.
+- Сторінки використовують `storeToRefs()`. Форма, картки та фільтри працюють через Props/Emits.
+
+Збережено категорії, перевірки дат та унікальності назв завдань, попередній перегляд, вибір картки, підтвердження видалення та всі режими сортування. До попередніх завдань додається `projectId: 'general'`.
+
+Стан зберігається в пам'яті вкладки. Перехід між сторінками зберігає дані й фільтри; повне оновлення відновлює 10 демонстраційних завдань та 3 початкові проєкти. Service Worker кешує ресурси PWA, але не зберігає користувацькі завдання.
+
+## Матеріали практикуму
+
+Локальні звіт, скриншоти та журнали перевірок розміщуються в `output/kp29/`. Ця папка й тимчасові файли `tmp/` виключені з Git. Початковий стан збережено в `tmp/kp29/taskflow-before-kp29.zip`.

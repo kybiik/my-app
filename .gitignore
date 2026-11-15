@@ -28,3 +28,7 @@ dev-dist
 !.env.example
 .dev.vars*
 .wrangler/
+
+# Local practical-work evidence and report build files
+tmp/
+output/

@@ -1,9 +1,11 @@
 <script setup>
 import { computed, reactive, ref } from 'vue';
 
-import { getTaskErrors } from '../store/tasks.js';
+import { getTaskErrors } from '../store/task-validation.js';
 
 const props = defineProps({
+  projects: { type: Array, required: true },
+  existingTasks: { type: Array, default: () => [] },
   task: {
     type: Object,
     default: null,
@@ -19,6 +21,7 @@ function createDefaultForm() {
     status: 'todo',
     priority: 'medium',
     category: 'study',
+    projectId: 'general',
     dueDate: '',
   };
 }
@@ -29,6 +32,7 @@ const form = reactive({
   status: props.task?.status ?? 'todo',
   priority: props.task?.priority ?? 'medium',
   category: props.task?.category ?? 'study',
+  projectId: props.task?.projectId ?? 'general',
   dueDate: props.task?.dueDate ?? '',
 });
 
@@ -47,7 +51,9 @@ const descriptionRemaining = computed(() => {
 });
 
 const errors = computed(() => {
-  return getTaskErrors(form, props.task);
+  const result = getTaskErrors(form, props.task, props.existingTasks);
+  if (!props.projects.some(project => project.id === form.projectId)) result.projectId = 'Оберіть проєкт зі списку.';
+  return result;
 });
 
 const statusLabels = {
@@ -90,6 +96,7 @@ function submitForm() {
     status: form.status,
     priority: form.priority,
     category: form.category,
+    projectId: form.projectId,
     dueDate: form.dueDate,
   });
 }
@@ -290,6 +297,14 @@ function submitForm() {
         >
           {{ errors.category }}
         </p>
+      </div>
+
+      <div class="tf4-field tf4-field--wide">
+        <label for="tf4-project">Проєкт</label>
+        <select id="tf4-project" v-model="form.projectId" :aria-invalid="showErrors && !!errors.projectId">
+          <option v-for="project in projects" :key="project.id" :value="project.id">{{ project.title }}</option>
+        </select>
+        <p v-if="showErrors && errors.projectId" class="tf4-error" role="alert">{{ errors.projectId }}</p>
       </div>
 
       <div class="tf4-field tf4-field--wide">

@@ -1,5 +1,7 @@
 <script setup>
 defineProps({
+  project: { type: String, default: 'all' },
+  projects: { type: Array, required: true },
   search: {
     type: String,
     default: '',
@@ -23,6 +25,7 @@ defineProps({
 });
 
 const emit = defineEmits([
+  'update:project',
   'update:search',
   'update:status',
   'update:priority',
@@ -78,6 +81,14 @@ const emit = defineEmits([
           <option value="high">Високий</option>
           <option value="medium">Середній</option>
           <option value="low">Низький</option>
+        </select>
+      </label>
+
+      <label class="tf5-sort">
+        <span>Проєкт</span>
+        <select :value="project" @change="emit('update:project', $event.target.value)">
+          <option value="all">Усі проєкти</option>
+          <option v-for="item in projects" :key="item.id" :value="item.id">{{ item.title }}</option>
         </select>
       </label>
 
